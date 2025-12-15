@@ -5,35 +5,11 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include "common.hpp"
 
 using namespace std;
 
-void die(const string& msg) {
-    cerr << "ERROR: " << msg << endl;
-    exit(1);
-}
 
-bool send_line(int fd, const string& line) {
-    string data = line + "\n";
-    return send(fd, data.c_str(), data.size(), 0) > 0;
-}
-
-string read_line(int fd) {
-    string buffer;
-    char ch;
-    while (recv(fd, &ch, 1, 0) > 0) {
-        if (ch == '\n') break;
-        if (ch != '\r') buffer += ch;
-    }
-    return buffer;
-}
-
-bool valid_user(const string& u) {
-    if (u.empty() || u.size() > 8) return false;
-    for (char c : u)
-        if (!isdigit(c) && !islower(c)) return false;
-    return true;
-}
 
 int connect_to_server(const string& ip, const string& port) {
     addrinfo hints = {}, *res;
@@ -56,10 +32,10 @@ void cmd_send(int fd) {
     cout << "Receiver: "; getline(cin, receiver);
     cout << "Subject: "; getline(cin, subject);
     
-    if (subject.size() > 80) die("Subject too long");
+    if (subject.size() > MAX_SUBJECT_LEN) die("Subject too long");
     if (!valid_user(sender) || !valid_user(receiver)) die("Invalid username");
     
-    send_line(fd, "SEND");
+    send_line(fd, CMD_SEND);
     send_line(fd, sender);
     send_line(fd, receiver);
     send_line(fd, subject);
@@ -76,7 +52,7 @@ void cmd_list(int fd) {
     cout << "Username: "; getline(cin, user);
     if (!valid_user(user)) die("Invalid username");
     
-    send_line(fd, "LIST");
+    send_line(fd, CMD_LIST);
     send_line(fd, user);
     
     int count = stoi(read_line(fd));
@@ -92,11 +68,11 @@ void cmd_read(int fd) {
     
     if (!valid_user(user)) die("Invalid username");
     
-    send_line(fd, "READ");
+    send_line(fd, CMD_READ);
     send_line(fd, user);
     send_line(fd, num);
     
-    if (read_line(fd) == "OK") {
+    if (read_line(fd) == RESP_OK) {
         string line;
         while ((line = read_line(fd)) != ".") cout << line << endl;
         cout << "." << endl;
@@ -112,7 +88,7 @@ void cmd_del(int fd) {
     
     if (!valid_user(user)) die("Invalid username");
     
-    send_line(fd, "DEL");
+    send_line(fd, CMD_DEL);
     send_line(fd, user);
     send_line(fd, num);
     
@@ -130,11 +106,11 @@ int main(int argc, char** argv) {
         
         for (char &c : cmd) c = toupper(c);
         
-        if (cmd == "SEND") cmd_send(fd);
-        else if (cmd == "LIST") cmd_list(fd);
-        else if (cmd == "READ") cmd_read(fd);
-        else if (cmd == "DEL") cmd_del(fd);
-        else if (cmd == "QUIT") { send_line(fd, "QUIT"); break; }
+        if (cmd == CMD_SEND) cmd_send(fd);
+        else if (cmd == CMD_LIST) cmd_list(fd);
+        else if (cmd == CMD_READ) cmd_read(fd);
+        else if (cmd == CMD_DEL) cmd_del(fd);
+        else if (cmd == CMD_QUIT) { send_line(fd, CMD_QUIT); break; }
         else if (!cmd.empty()) cout << "Unknown command" << endl;
     }
     
