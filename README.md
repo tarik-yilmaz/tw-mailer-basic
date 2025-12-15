@@ -12,6 +12,9 @@ Commands:
 - `READ`: Read specific message.
 - `DEL`: Delete specific message.
 - `QUIT`: Close connection.
+- **Enhancements**:
+    - `LIST` includes timestamp.
+    - Client automatically lists messages before `READ`/`DEL` if needed.
 
 ## Requirements
 - Linux/WSL
@@ -23,6 +26,7 @@ Commands:
 .
 ├── twmailer-client.cpp
 ├── twmailer-server.cpp
+├── common.hpp
 ├── Makefile
 └── README.md
 ```
