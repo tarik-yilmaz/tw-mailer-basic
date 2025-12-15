@@ -11,6 +11,13 @@ using namespace std;
 
 
 
+
+// State to remember last listed user
+string last_list_user = "";
+
+
+
+
 int connect_to_server(const string& ip, const string& port) {
     addrinfo hints = {}, *res;
     hints.ai_family = AF_UNSPEC;
@@ -47,11 +54,7 @@ void cmd_send(int fd) {
     cout << read_line(fd) << endl;
 }
 
-void cmd_list(int fd) {
-    string user;
-    cout << "Username: "; getline(cin, user);
-    if (!valid_user(user)) die("Invalid username");
-    
+void perform_list(int fd, const string& user) {
     send_line(fd, CMD_LIST);
     send_line(fd, user);
     
@@ -61,12 +64,29 @@ void cmd_list(int fd) {
         cout << i << ") " << read_line(fd) << endl;
 }
 
+void cmd_list(int fd) {
+    string user;
+    cout << "Username: "; getline(cin, user);
+    if (!valid_user(user)) die("Invalid username");
+    
+    perform_list(fd, user);
+    last_list_user = user;
+}
+
 void cmd_read(int fd) {
     string user, num;
     cout << "Username: "; getline(cin, user);
-    cout << "Message#: "; getline(cin, num);
     
     if (!valid_user(user)) die("Invalid username");
+    
+    // Auto-List if we haven't listed this user recently
+    if (user != last_list_user) {
+        cout << "[Auto-List for " << user << "]" << endl;
+        perform_list(fd, user);
+        last_list_user = user;
+    }
+    
+    cout << "Message#: "; getline(cin, num);
     
     send_line(fd, CMD_READ);
     send_line(fd, user);
@@ -84,9 +104,17 @@ void cmd_read(int fd) {
 void cmd_del(int fd) {
     string user, num;
     cout << "Username: "; getline(cin, user);
-    cout << "Message#: "; getline(cin, num);
     
     if (!valid_user(user)) die("Invalid username");
+    
+    // Auto-List if we haven't listed this user recently
+    if (user != last_list_user) {
+        cout << "[Auto-List for " << user << "]" << endl;
+        perform_list(fd, user);
+        last_list_user = user;
+    }
+    
+    cout << "Message#: "; getline(cin, num);
     
     send_line(fd, CMD_DEL);
     send_line(fd, user);
