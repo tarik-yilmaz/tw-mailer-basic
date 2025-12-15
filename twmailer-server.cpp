@@ -112,10 +112,25 @@ void handle_list(int fd, const string& spool_dir) {
     for (const auto& filepath : files) {
         ifstream file(filepath);
         string subject;
+        string filename = filepath.filename().string();
+        string date_str = "(Unknown Date)";
+        
+        // Filename format: YYYYMMDD_HHMMSS_SEQ.txt
+        // Length: 8 (date) + 1 (_) + 6 (time) + 1 (_) + 3 (seq) + 4 (.txt) = 23
+        if (filename.size() >= 15) {
+             string yyyy = filename.substr(0, 4);
+             string mm = filename.substr(4, 2);
+             string dd = filename.substr(6, 2);
+             string H = filename.substr(9, 2);
+             string M = filename.substr(11, 2);
+             string S = filename.substr(13, 2);
+             date_str = yyyy + "-" + mm + "-" + dd + " " + H + ":" + M + ":" + S;
+        }
+
         if (getline(file, subject)) {
-            send_line(fd, subject);
+            send_line(fd, subject + " [" + date_str + "]");
         } else {
-            send_line(fd, "(No Subject)"); // Should not happen with well-formed files
+            send_line(fd, "(No Subject) [" + date_str + "]");
         }
     }
 }
